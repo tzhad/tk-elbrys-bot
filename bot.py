@@ -47,11 +47,11 @@ async def route(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return CONTACT
 
 async def contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-context.user_data["contact"] = update.message.text
-user_data = context.user_data
-tg_user = update.message.from_user
-tg_name = f"{tg_user.first_name or ''} {tg_user.last_name or ''}".strip()
-tg_username = f"@{tg_user.username}" if tg_user.username else "—"
+    context.user_data["contact"] = update.message.text
+        user_data = context.user_data
+    tg_user = update.message.from_user
+    tg_name = f"{tg_user.first_name or ''} {tg_user.last_name or ''}".strip()
+    tg_username = f"@{tg_user.username}" if tg_user.username else "—"
 
 message = (
     f"Новая заявка на перевозку 🚚\\n\\n"

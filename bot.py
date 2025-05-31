@@ -48,16 +48,21 @@ async def route(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["contact"] = update.message.text
-    user_data = context.user_data
+  user_data = context.user_data
+tg_user = update.message.from_user
+tg_name = f"{tg_user.first_name or ''} {tg_user.last_name or ''}".strip()
+tg_username = f"@{tg_user.username}" if tg_user.username else "—"
 
-    message = (
-        f"Новая заявка на перевозку 🚚\n\n"
-        f"Имя: {user_data['name']}\n"
-        f"Груз: {user_data['cargo']}\n"
-        f"Габариты: {user_data['dimensions']}\n"
-        f"Маршрут: {user_data['route']}\n"
-        f"Контакт: {user_data['contact']}"
-    )
+message = (
+    f"Новая заявка на перевозку 🚚\\n\\n"
+    f"Имя клиента: {user_data['name']}\\n"
+    f"Telegram: {tg_name} ({tg_username})\\n"
+    f"Груз: {user_data['cargo']}\\n"
+    f"Габариты: {user_data['dimensions']}\\n"
+    f"Маршрут: {user_data['route']}\\n"
+    f"Контакт: {user_data['contact']}"
+)
+
 
     # Отправка админу в Telegram
     if ADMIN_CHAT_ID:

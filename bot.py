@@ -70,7 +70,7 @@ async def contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             create_deal(contact_id, user_data)
 
     await update.message.reply_text("Спасибо! Ваша заявка принята. Мы свяжемся с вами в ближайшее время.")
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True
     return ConversationHandler.END
 
 def create_contact(data):

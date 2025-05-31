@@ -1,8 +1,11 @@
 import os
 import logging
 import requests
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler, ContextTypes, filters
+from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler,
+    CallbackQueryHandler, ContextTypes, filters
+)
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -15,10 +18,12 @@ NAME, CARGO, DIMENSIONS, ROUTE, CONTACT = range(5)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     reply_keyboard = [["Оформить заявку"]]
     await update.message.reply_text(
-        "Приветствуем!\n\n"
-        "Чтобы оформить заявку, нажмите кнопку ниже 👇",
+        "Добро пожаловать в ТК Эльбрус! 🚚\n"
+        "Мы предоставляем услуги по грузоперевозке по России.\n"
+        "Через этого бота вы можете быстро оставить заявку на перевозку груза.\n\n"
+        "Нажмите кнопку ниже, чтобы начать оформление заявки.",
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
-    ) 
+    )
     return NAME
 
 async def name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -69,9 +74,20 @@ async def contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         if contact_id:
             create_deal(contact_id, user_data)
 
-    await update.message.reply_text("Спасибо! Ваша заявка принята. Мы свяжемся с вами в ближайшее время.")
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True
+    keyboard = [[InlineKeyboardButton("Оформить ещё одну заявку", callback_data="new_request")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(
+        "Спасибо! Ваша заявка принята. Мы свяжемся с вами в ближайшее время.",
+        reply_markup=reply_markup
+    )
     return ConversationHandler.END
+
+async def new_request_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    await query.message.reply_text("Введите ваше имя:", reply_markup=ReplyKeyboardRemove())
+    return NAME
 
 def create_contact(data):
     contact_payload = {
@@ -111,6 +127,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
+
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start), MessageHandler(filters.Regex("^Оформить заявку$"), name)],
         states={
@@ -122,7 +139,21 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
+
+    inline_conv_handler = ConversationHandler(
+        entry_points=[CallbackQueryHandler(new_request_callback, pattern="^new_request$")],
+        states={
+            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, name)],
+            CARGO: [MessageHandler(filters.TEXT & ~filters.COMMAND, cargo)],
+            DIMENSIONS: [MessageHandler(filters.TEXT & ~filters.COMMAND, dimensions)],
+            ROUTE: [MessageHandler(filters.TEXT & ~filters.COMMAND, route)],
+            CONTACT: [MessageHandler(filters.TEXT & ~filters.COMMAND, contact)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )
+
     app.add_handler(conv_handler)
+    app.add_handler(inline_conv_handler)
     app.run_polling()
 
 if __name__ == "__main__":

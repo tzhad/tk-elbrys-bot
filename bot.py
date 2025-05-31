@@ -4,15 +4,12 @@ import requests
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ConversationHandler, ContextTypes, filters
 
-# Настройка логирования
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# Получение переменных окружения
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 BITRIX_WEBHOOK_URL = os.getenv("BITRIX_WEBHOOK_URL")
 
-# Этапы диалога
 NAME, CARGO, DIMENSIONS, ROUTE, CONTACT = range(5)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -48,34 +45,33 @@ async def route(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["contact"] = update.message.text
-        user_data = context.user_data
+    user_data = context.user_data
+
     tg_user = update.message.from_user
     tg_name = f"{tg_user.first_name or ''} {tg_user.last_name or ''}".strip()
     tg_username = f"@{tg_user.username}" if tg_user.username else "—"
+    user_data["tg_name"] = tg_name
+    user_data["tg_username"] = tg_username
 
-message = (
-    f"Новая заявка на перевозку 🚚\\n\\n"
-    f"Имя клиента: {user_data['name']}\\n"
-    f"Telegram: {tg_name} ({tg_username})\\n"
-    f"Груз: {user_data['cargo']}\\n"
-    f"Габариты: {user_data['dimensions']}\\n"
-    f"Маршрут: {user_data['route']}\\n"
-    f"Контакт: {user_data['contact']}"
-)
+    message = (
+        f"Новая заявка на перевозку 🚚\n\n"
+        f"Имя клиента: {user_data['name']}\n"
+        f"Telegram: {tg_name} ({tg_username})\n"
+        f"Груз: {user_data['cargo']}\n"
+        f"Габариты: {user_data['dimensions']}\n"
+        f"Маршрут: {user_data['route']}\n"
+        f"Контакт: {user_data['contact']}"
+    )
 
-
-    # Отправка админу в Telegram
     if ADMIN_CHAT_ID:
         await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=message)
 
-    # Отправка в Bitrix24
     if BITRIX_WEBHOOK_URL:
         contact_id = create_contact(user_data)
         if contact_id:
             create_deal(contact_id, user_data)
 
     await update.message.reply_text("Спасибо! Ваша заявка принята. Мы свяжемся с вами в ближайшее время.")
-
     return ConversationHandler.END
 
 def create_contact(data):
@@ -83,7 +79,7 @@ def create_contact(data):
         "fields": {
             "NAME": data["name"],
             "PHONE": [{"VALUE": data["contact"], "VALUE_TYPE": "WORK"}],
-            "COMMENTS": f"Груз: {data['cargo']}\nГабариты: {data['dimensions']}\nМаршрут: {data['route']}"
+            "COMMENTS": f"Груз: {data['cargo']}\nГабариты: {data['dimensions']}\nМаршрут: {data['route']}\nTelegram: {data['tg_name']} ({data['tg_username']})"
         }
     }
     try:
@@ -99,7 +95,7 @@ def create_deal(contact_id, data):
         "fields": {
             "TITLE": f"Перевозка: {data['route']}",
             "CONTACT_ID": contact_id,
-            "COMMENTS": f"Груз: {data['cargo']}\nГабариты: {data['dimensions']}\nКонтакт: {data['contact']}",
+            "COMMENTS": f"Груз: {data['cargo']}\nГабариты: {data['dimensions']}\nКонтакт: {data['contact']}\nTelegram: {data['tg_name']} ({data['tg_username']})",
             "STAGE_ID": "NEW"
         }
     }
@@ -116,7 +112,6 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start), MessageHandler(filters.Regex("^Оформить заявку$"), name)],
         states={
@@ -128,7 +123,6 @@ def main():
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
-
     app.add_handler(conv_handler)
     app.run_polling()
 

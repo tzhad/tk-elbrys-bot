@@ -15,9 +15,8 @@ NAME, CARGO, DIMENSIONS, ROUTE, CONTACT = range(5)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     reply_keyboard = [["Оформить заявку"]]
     await update.message.reply_text(
-        "Спасибо! Ваша заявка принята. Мы свяжемся с вами в ближайшее время.\n\n"
-        "Чтобы оформить ещё одну заявку, нажмите кнопку ниже 👇",
-        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+        "Приветствуем!\n\n"
+        "Чтобы оформить заявку, нажмите кнопку ниже 👇",
     )
     return NAME
 
@@ -70,7 +69,7 @@ async def contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             create_deal(contact_id, user_data)
 
     await update.message.reply_text("Спасибо! Ваша заявка принята. Мы свяжемся с вами в ближайшее время.")
-    return ConversationHandler.END
+    return ConversationHandler.START
 
 def create_contact(data):
     contact_payload = {
